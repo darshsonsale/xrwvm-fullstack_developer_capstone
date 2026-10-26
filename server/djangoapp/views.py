@@ -9,7 +9,8 @@
 # from datetime import datetime
 
 from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.models import User
 import logging
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -63,3 +64,31 @@ def login_user(request):
 # Create a `add_review` view to submit a review
 # def add_review(request):
 # ...
+
+
+def logout_request(request):
+    logout(request)
+    data = {"userName": ""}
+    return JsonResponse(data)
+
+
+@csrf_exempt
+def registration(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required"}, status=405)
+
+    data = json.loads(request.body)
+    username = data["userName"]
+
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({"error": "Already Registered"})
+
+    user = User.objects.create_user(
+        username=username,
+        password=data["password"],
+        email=data.get("email", ""),
+        first_name=data.get("firstName", ""),
+        last_name=data.get("lastName", ""),
+    )
+    login(request, user)
+    return JsonResponse({"userName": username, "status": "Registered"})
